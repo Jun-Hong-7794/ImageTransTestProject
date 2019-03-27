@@ -107,9 +107,7 @@ int CClient::Client_init(int Client_Port,char *Client_IP){
 	char revMsg[50];
 
 	printf("Press Enter Key to Connect with Robot Sever . . .\n");
-
-	getchar();
-
+	
 	cliSocket = socket(PF_INET,SOCK_STREAM,0);
 	memset(&servAddr,0,sizeof(servAddr));
 	if(cliSocket == -1){
