@@ -7,10 +7,10 @@
 #include "CUDP.h"
 #include "CSocket.h"
 
-#define UNIT_BUFFER_SIZE 60000
+#define UNIT_BUFFER_SIZE 65000
 #define TOTAL_BUFFER_SIZE 810000
 
-#define USINGTCP
+//#define USINGTCP
 
 bool checkUDPpackage(unsigned char* _input, unsigned char* _output, int _loop_num, int& _total_buffer_size, bool& _is_end_package);
 bool parseHeader(CClient* _client_socket, int& _image_data_size);
@@ -20,7 +20,7 @@ int main() {
 #ifdef USINGTCP
 	CClient my_client;
 	
-	if(my_client.Client_init(1233, "127.0.0.1") == SOCKET_SUCCESS)
+	if(my_client.Client_init(1233, "192.168.1.11") == SOCKET_SUCCESS)
 		printf("Client Init");
 	else {
 		printf("Fail to Client Init");
@@ -29,13 +29,11 @@ int main() {
 
 #else
 	CUDP my_udp;
-	if (!my_udp.UDP_init(ONLY_MY, "192.168.1.11", 1230, "OpencvImageTest", "127.0.0.1", 1232))
+	if (!my_udp.UDP_init(ONLY_MY, "192.168.1.11", 1230, "OpencvImageTest", "192.168.1.11", 1232))
 		return 0;
 #endif // USINGTCP
 
 	cv::Mat tmp_trans_img;
-
-
 	unsigned char tmp_buffer[UNIT_BUFFER_SIZE];
 	
 #ifdef USINGTCP
@@ -111,9 +109,9 @@ int main() {
 		tmp_trans_img = cv::imdecode(tmp_uchar, 1);
 		cv::imshow("ShowImage", tmp_trans_img);
 		cv::waitKey(1);
-		delete[] total_buffer;
+		
 #ifdef USINGTCP
-
+		delete[] total_buffer;
 #else
 		memset(tmp_buffer, 0, UNIT_BUFFER_SIZE);
 		memset(total_buffer, 0, TOTAL_BUFFER_SIZE);
