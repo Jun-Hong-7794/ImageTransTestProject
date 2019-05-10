@@ -59,6 +59,7 @@ private:
 public:
 	CClient();
 	~CClient();
+	void CloseClient();
 	int Client_init(int Port,char *IP);
 	int Send_Data(char *Send_Data,int Data_Size);
 	int Receive_Data(char *Recv_Data,int Data_Size, int& _received_data);

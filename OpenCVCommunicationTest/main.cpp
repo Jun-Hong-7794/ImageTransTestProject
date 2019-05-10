@@ -9,14 +9,33 @@
 
 #define UNIT_BUFFER_SIZE 65000
 #define TOTAL_BUFFER_SIZE 810000
+#define NETWORK_DISCONNECTION 0x02
 
 //#define USINGTCP
 
 bool checkUDPpackage(unsigned char* _input, unsigned char* _output, int _loop_num, int& _total_buffer_size, bool& _is_end_package);
-bool parseHeader(CClient* _client_socket, int& _image_data_size);
+int parseHeader(CClient* _client_socket, int& _image_data_size);
 
 int main() {
 	//m_ibeo_socket.Receive_Data((char *)&_head_data[4], sizeof(BYTE) * 20, received_data_size);
+
+	/*CUDP my_udp_test;
+	if (!my_udp_test.UDP_init(USING_BOTH, "127.0.0.1", 7800, "OpencvImageTest", "192.168.1.11", 1232))
+		return 0;
+
+	char tmp_data[8];
+	float tmp_v = 60;
+	float tmp_s = 0.3;
+	
+	memcpy(&tmp_data[0], &tmp_s, sizeof(float));
+	memcpy(&tmp_data[4], &tmp_v, sizeof(float));
+
+	while (true) {
+		my_udp_test.Send(tmp_data, sizeof(float)*2);
+		Sleep(10);
+	}
+
+	return 0;*/
 #ifdef USINGTCP
 	CClient my_client;
 	
@@ -29,7 +48,7 @@ int main() {
 
 #else
 	CUDP my_udp;
-	if (!my_udp.UDP_init(ONLY_MY, "192.168.1.11", 1230, "OpencvImageTest", "192.168.1.11", 1232))
+	if (!my_udp.UDP_init(ONLY_MY, "127.0.0.1", 1230, "OpencvImageTest", "127.0.0.1", 1232))
 		return 0;
 #endif // USINGTCP
 
@@ -58,7 +77,7 @@ int main() {
 		
 		while(true) {
 #ifdef USINGTCP
-			if (parseHeader(&my_client, total_buffer_size)) {
+			if (parseHeader(&my_client, total_buffer_size) != NETWORK_DISCONNECTION) {
 			
 				if (total_buffer_size <= 0)
 					continue;
@@ -66,12 +85,21 @@ int main() {
 				int received_data_size = 0;
 				total_buffer = new unsigned char[total_buffer_size];
 				
-				my_client.Receive_Data((char *)total_buffer, sizeof(BYTE) * total_buffer_size, received_data_size);
-				
+				if (my_client.Receive_Data((char *)total_buffer, sizeof(BYTE) * total_buffer_size, received_data_size) == SOCKET_RV_FAIL) {
+					printf("Receive Error");
+					
+					my_client.CloseClient();
+					
+					if (my_client.Client_init(1233, "192.168.1.11") == SOCKET_SUCCESS)
+						printf("Client Init");
+
+					continue;
+				}
 				break;
 			}
-			else
+			else {
 				continue;
+			}
 #else
 			if (my_udp.Recv(tmp_buffer, UNIT_BUFFER_SIZE) > 0) {
 
@@ -107,6 +135,7 @@ int main() {
 		//unsigned char* tmp_char_buffer = new unsigned char[total_buffer_size];
 		std::vector<uchar> tmp_uchar(total_buffer, total_buffer + total_buffer_size);
 		tmp_trans_img = cv::imdecode(tmp_uchar, 1);
+		cv::imwrite("JunTest.jpg", tmp_trans_img);
 		cv::imshow("ShowImage", tmp_trans_img);
 		cv::waitKey(1);
 		
@@ -170,7 +199,7 @@ bool checkUDPpackage(unsigned char* _input, unsigned char* _output, int _loop_nu
 	return true;
 }
 
-bool parseHeader(CClient* _client_socket, int& _image_data_size) {
+int parseHeader(CClient* _client_socket, int& _image_data_size) {
 
 	int received_data_size = 0;
 	BYTE header_data[5];
@@ -198,5 +227,5 @@ bool parseHeader(CClient* _client_socket, int& _image_data_size) {
 		}
 	}
 
-	return false;
+	return NETWORK_DISCONNECTION;
 }

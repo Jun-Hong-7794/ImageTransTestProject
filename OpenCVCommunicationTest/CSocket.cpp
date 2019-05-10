@@ -126,24 +126,16 @@ int CClient::Client_init(int Client_Port,char *Client_IP){
 		return SOCKET_SO_FAIL;
 	}
 
-	/*else{
-		printf("connect() OK\n");
-		if(recv(cliSocket,revMsg,sizeof(revMsg)-1,0) == -1){
-			return SOCKET_RV_FAIL;
-		}
-		printf("Message From Linux Machine : %s\n\n",revMsg);
-	}*/
-
 	return SOCKET_SUCCESS;
 }
 
 int CClient::Send_Data(char *Send_Data,int Data_Size){//15
 
 	if(send(cliSocket,Send_Data,sizeof(char)*Data_Size,0) == -1){//Accept_Check
-		//printf("Client send err\n");
-		int a = 0;
+		return SOCKET_SD_FAIL;
 	}
-		return SOCKET_SUCCESS;
+	
+	return SOCKET_SUCCESS;
 }
 
 int CClient::Receive_Data(char *Recv_Data,int Data_Size, int& _received_data){//685
@@ -155,9 +147,14 @@ int CClient::Receive_Data(char *Recv_Data,int Data_Size, int& _received_data){//
 
 
 	_received_data = recv(cliSocket, Recv_Data, sizeof(char)*Data_Size, 0);
-
-	//printf("W : %f\n",Recv_Data[682]);
-	//printf("V : %f\n\n",Recv_Data[683]);
-
+	
+	if (_received_data < 0)
+		return SOCKET_RV_FAIL;
+	
 	return SOCKET_SUCCESS;
+}
+
+void CClient::CloseClient() {
+	closesocket(cliSocket);
+	WSACleanup();
 }
