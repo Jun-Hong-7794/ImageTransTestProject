@@ -17,29 +17,11 @@ bool checkUDPpackage(unsigned char* _input, unsigned char* _output, int _loop_nu
 int parseHeader(CClient* _client_socket, int& _image_data_size);
 
 int main() {
-	//m_ibeo_socket.Receive_Data((char *)&_head_data[4], sizeof(BYTE) * 20, received_data_size);
-
-	/*CUDP my_udp_test;
-	if (!my_udp_test.UDP_init(USING_BOTH, "127.0.0.1", 7800, "OpencvImageTest", "192.168.1.11", 1232))
-		return 0;
-
-	char tmp_data[8];
-	float tmp_v = 60;
-	float tmp_s = 0.3;
 	
-	memcpy(&tmp_data[0], &tmp_s, sizeof(float));
-	memcpy(&tmp_data[4], &tmp_v, sizeof(float));
-
-	while (true) {
-		my_udp_test.Send(tmp_data, sizeof(float)*2);
-		Sleep(10);
-	}
-
-	return 0;*/
 #ifdef USINGTCP
 	CClient my_client;
 	
-	if(my_client.Client_init(1233, "192.168.1.11") == SOCKET_SUCCESS)
+	if(my_client.Client_init(1239, "192.168.0.11") == SOCKET_SUCCESS)
 		printf("Client Init");
 	else {
 		printf("Fail to Client Init");
@@ -48,7 +30,9 @@ int main() {
 
 #else
 	CUDP my_udp;
-	if (!my_udp.UDP_init(ONLY_MY, "127.0.0.1", 1230, "OpencvImageTest", "127.0.0.1", 1232))
+	int dst_port = 2230;
+	int host_port = 1232;
+	if (!my_udp.UDP_init(ONLY_MY, "127.0.0.1", dst_port, "OpencvImageTest", "127.0.0.1", host_port))
 		return 0;
 #endif // USINGTCP
 
@@ -90,7 +74,7 @@ int main() {
 					
 					my_client.CloseClient();
 					
-					if (my_client.Client_init(1233, "192.168.1.11") == SOCKET_SUCCESS)
+					if (my_client.Client_init(1233, "127.0.0.1") == SOCKET_SUCCESS)
 						printf("Client Init");
 
 					continue;
@@ -135,7 +119,7 @@ int main() {
 		//unsigned char* tmp_char_buffer = new unsigned char[total_buffer_size];
 		std::vector<uchar> tmp_uchar(total_buffer, total_buffer + total_buffer_size);
 		tmp_trans_img = cv::imdecode(tmp_uchar, 1);
-		cv::imwrite("JunTest.jpg", tmp_trans_img);
+		//cv::imwrite("JunTest.jpg", tmp_trans_img);
 		cv::imshow("ShowImage", tmp_trans_img);
 		cv::waitKey(1);
 		
@@ -162,14 +146,14 @@ int main() {
 	return 0;
 }
 
-// Header(3) + loopNum(4) + dataSize(4) + **Data(7986)** + Tail(3) = 8000
+// UDP
+// Header(3) + block_num(4) + dataSize(4) + **Data(7986)** + Tail(3) = 8000
 bool checkUDPpackage(unsigned char* _input, unsigned char* _output, int _loop_num, int& _total_buffer_size, bool& _is_end_package) {
 
-	//_input => _output
 	if(!((_input[0] == 'M') && (_input[1] == 'O') && (_input[2] == 'R')))//Check Header
 		return false;
 	
-	if (!((_input[UNIT_BUFFER_SIZE - 2] == 'A') && (_input[UNIT_BUFFER_SIZE - 1] == 'I'))) {//Check Tail
+	if (!((_input[UNIT_BUFFER_SIZE - 2] == 'A') && (_input[UNIT_BUFFER_SIZE - 1] == 'I'))) {//Check Tail. AI(Normal Package Type) or AE(When the package is last of Image data package)
 		if (_input[UNIT_BUFFER_SIZE - 2] != 'E')
 			return false;
 		else
@@ -199,6 +183,7 @@ bool checkUDPpackage(unsigned char* _input, unsigned char* _output, int _loop_nu
 	return true;
 }
 
+// TCP/IP
 int parseHeader(CClient* _client_socket, int& _image_data_size) {
 
 	int received_data_size = 0;
